@@ -1,3 +1,4 @@
+'''
 def check(expr) :
     arr = []
     for c in expr:
@@ -22,3 +23,24 @@ def check(expr) :
 
 
 print(check(input()))
+'''
+
+input()
+a = list(input())
+b = []
+for x in a:
+    if len(b) == 0:
+        b.append(x)
+    else:
+        if b[-1] == "(" and x == ")":
+            b.pop()
+        elif b[-1] == "[" and x == "]":
+            b.pop()
+        elif b[-1] == "{" and x == "}":
+            b.pop()
+        else:
+            b.append(x)
+if len(b) == 0:
+    print("Yes")
+else:
+    print("No")
