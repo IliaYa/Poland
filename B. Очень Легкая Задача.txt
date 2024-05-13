@@ -1,0 +1,16 @@
+def binsearchR(x):       # правый БП
+    bottom = -1
+    top = 10**9
+    while bottom + 1 < top:
+        center = (top + bottom) // 2
+        if printtime(center) >= x:
+            top = center
+        else:
+            bottom = center
+    return top
+
+printtime = lambda t: t // x + (t - x) // y     #проверка условия
+
+n, x, y = map(int, input().split())
+x, y = min(x, y), max(x, y)
+print(binsearchR(n))
