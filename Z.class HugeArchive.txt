@@ -1,0 +1,65 @@
+import os
+import zipfile
+
+class HugeArchive(zipfile.ZipFile):
+    def __init__(self, file, mode='r', compression=zipfile.ZIP_STORED, part_size=10):
+        super().__init__(file, mode, compression)
+        self.part_size = part_size
+
+    def _get_parts(self, file_size):
+        parts = file_size // self.part_size
+        if file_size % self.part_size != 0:
+            parts += 1
+        return parts
+
+    def _generate_part_filenames(self, filename, parts):
+        base_filename, ext = os.path.splitext(filename)
+        part_filenames = [f"{base_filename}{ext}{i}" for i in range(1, parts + 1)]
+        return part_filenames
+
+    def _write_to_parts(self, source_file, part_filenames):
+        with open(source_file, 'rb') as f:
+            for part_filename in part_filenames:
+                with open(part_filename, 'wb') as part_file:
+                    part_file.write(f.read(self.part_size))
+
+    def _concatenate_parts(self, target_file, part_filenames):
+        with open(target_file, 'wb') as f:
+            for part_filename in part_filenames:
+                with open(part_filename, 'rb') as part_file:
+                    f.write(part_file.read())
+
+    def _cleanup_parts(self, part_filenames):
+        for part_filename in part_filenames:
+            os.remove(part_filename)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        self.close()
+
+    def extractall(self, path=None, members=None, pwd=None):
+        if not path:
+            path = os.getcwd()
+
+        extracted_files = super().extractall(path, members, pwd)
+        return extracted_files
+
+    def write(self, filename, arcname=None, compress_type=None):
+        super().write(filename, arcname, compress_type)
+
+    def close(self):
+        if self.mode == 'a' or self.mode == 'w':
+            source_file = self.filename
+            file_size = os.path.getsize(source_file)
+            parts = self._get_parts(file_size)
+            part_filenames = self._generate_part_filenames(source_file, parts)
+            self._write_to_parts(source_file, part_filenames)
+            super().close()
+            os.remove(source_file)
+            self.filename = source_file
+            self._concatenate_parts(source_file, part_filenames)
+            self._cleanup_parts(part_filenames)
+        else:
+            super().close()
